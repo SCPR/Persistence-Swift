@@ -70,7 +70,7 @@ public class Persistence {
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func directoryURL(forLocation location:Persistence.FileLocation) -> URL? {
+	public func directoryURL(forLocation location:FileLocation) -> URL? {
 		var locationDirectoryURL:URL?
 		var isVersioned = false
 
@@ -125,7 +125,7 @@ public class Persistence {
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func file(isOlderThan ageThreshold:TimeInterval, fileNamed fileName:String, location:Persistence.FileLocation) -> Bool {
+	public func file(isOlderThan ageThreshold:TimeInterval, fileNamed fileName:String, location:FileLocation) -> Bool {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
 			return false
 		}
@@ -160,11 +160,11 @@ public class Persistence {
 	///     - location: The on-device `FileLocation` where the file is to be written.
 	///
 	/// - Returns:
-	///     - A .success() Result with a true Bool if the write succeeded, or a .failure() with a Persistence.WriteError if it did not.
+	///     - A .success() Result with a true Bool if the write succeeded, or a .failure() with a WriteError if it did not.
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:Persistence.FileLocation) -> Result<Bool, WriteError> where T : Encodable {
+	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) -> Result<Bool, WriteError> where T : Encodable {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
 			return .failure(.invalidDirectory)
 		}
@@ -201,11 +201,11 @@ public class Persistence {
 	///     - fileName: The name of the file to read.
 	///     - type: The `Codable`-conformant class, struct, enum, or collection.
 	///     - location: The on-device `FileLocation` where the file is to be read from.
-	///     - completion: A completion handler that returns a .success() Result with the read class, struct, enum, or collection if the read succeeded, or a .failure() with a Persistence.ReadError if it did not.
+	///     - completion: A completion handler that returns a .success() Result with the read class, struct, enum, or collection if the read succeeded, or a .failure() with a ReadError if it did not.
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:Persistence.FileLocation, completion: @escaping (Result<T, ReadError>) -> Void) where T : Decodable {
+	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:FileLocation, completion: @escaping (Result<T, ReadError>) -> Void) where T : Decodable {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
 			completion(.failure(ReadError.invalidDirectory))
 			return
