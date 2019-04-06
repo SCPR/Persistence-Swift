@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// This class handles all loading and saving behaviors provided by the Persistence framework.
+/// This class handles all reading and writing behaviors provided by the Persistence framework.
 ///
 /// - Author: Jeff A. Campbell
 ///
@@ -113,7 +113,7 @@ public class Persistence {
 		return locationDirectoryURL
 	}
 
-	/// Whether a named file at a specified location is older than a supplied time interval. Optionally specifying that the file is versioned.
+	/// Whether a named file at a specified location is older than a supplied time interval. Optionally refers to a versioned location (so that it does not persist between app builds).
 	///
 	/// - Parameters:
 	///     - ageThreshold: The TimeInterval used as a threshold for the file's age.
@@ -152,28 +152,31 @@ public class Persistence {
 		return true
 	}
 
-	/// Saves a `Codable`-compliant class, struct, enum, or collection to a named file at a specified location. Can optionally version the file (so that it does not persist between app versions).
+	/// Writes a `Codable`-compliant class, struct, enum, or collection to a named file at a specified location.
 	///
 	/// - Parameters:
 	///     - encodableItem: A `Codable`-conformant class, struct, enum, or collection.
-	///     - fileName: The name of the file to save.
-	///     - location: The on-device `FileLocation` where the file is to be saved.
+	///     - fileName: The name of the file to write.
+	///     - location: The on-device `FileLocation` where the file is to be written.
+	///
+	/// - Returns:
+	///     - A .success() Result with a true Bool if the write succeeded, or a .failure() with a Persistence.WriteError if it did not.
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func save<T>(_ encodableItem:T, toFileNamed fileName:String, location:Persistence.FileLocation) throws -> Void where T : Encodable {
+	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:Persistence.FileLocation) -> Result<Bool, WriteError> where T : Encodable {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
-			throw SaveError.invalidDirectory
+			return .failure(.invalidDirectory)
 		}
 
 		if self.createDirectory(locationDirectoryURL) == false {
-			throw SaveError.couldNotCreateDirectory
+			return .failure(.couldNotCreateDirectory)
 		}
 
 		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
 
-		var saved	= false
 		do {
+			var saved				= false
 			let data				= try self.jsonEncoder.encode(encodableItem)
 
 			NSFileCoordinator().coordinate(writingItemAt: fileURL, options: [], error: nil, byAccessor: { (writeURL) in
@@ -181,58 +184,63 @@ public class Persistence {
 					saved = true
 				}
 			})
+
+			if saved == false {
+				return .failure(.couldNotWriteFile)
+			}
 		} catch {
-			throw SaveError.couldNotEncode
+			return .failure(.couldNotEncode)
 		}
 
-		if saved == false {
-			throw SaveError.failed
-		}
+		return .success(true)
 	}
 
-	/// Loads a `Codable`-compliant class, struct, enum, or collection from a named file at a specified location. Optionally attempts to load from a version-specific location.
+	/// Reads a `Codable`-compliant class, struct, enum, or collection from a named file at a specified location.
 	///
 	/// - Parameters:
-	///     - fileName: The name of the file to load.
+	///     - fileName: The name of the file to read.
 	///     - type: The `Codable`-conformant class, struct, enum, or collection.
-	///     - location: The on-device `FileLocation` where the file is to be loaded from.
-	///     - completion: A completion handler that returns the loaded class, struct, enum, or collection.
+	///     - location: The on-device `FileLocation` where the file is to be read from.
+	///     - completion: A completion handler that returns a .success() Result with the read class, struct, enum, or collection if the read succeeded, or a .failure() with a Persistence.ReadError if it did not.
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func load<T>(fromFileNamed fileName:String, asType type:T.Type, location:Persistence.FileLocation, completion: @escaping (T?) -> Void) throws -> Void where T : Decodable {
+	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:Persistence.FileLocation, completion: @escaping (Result<T, ReadError>) -> Void) where T : Decodable {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
-			throw LoadError.invalidDirectory
+			completion(.failure(ReadError.invalidDirectory))
+			return
 		}
 
 		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
 
 		if FileManager.default.fileExists(atPath: fileURL.path) == false {
-			throw LoadError.fileDoesNotExist
-		}
+			completion(.failure(ReadError.fileDoesNotExist))
+		} else {
+			NSFileCoordinator().coordinate(readingItemAt: fileURL, options: [], error: nil) { [weak self] (readURL) in
+				guard let _self = self else {
+					completion(.failure(ReadError.failed))
+					return
+				}
 
-		var loaded	= false
-		NSFileCoordinator().coordinate(readingItemAt: fileURL, options: [], error: nil) { [weak self] (readURL) in
-			guard let _self = self else {
-				return
-			}
+				if let data = FileManager.default.contents(atPath: readURL.path) {
+					if let instance = try? _self.jsonDecoder.decode(type, from: data) {
+						completion(.success(instance))
+					} else {
+						completion(.failure(ReadError.failed))
+					}
 
-			let data = FileManager.default.contents(atPath: readURL.path)
 
-			if let data = data {
-				do {
-					let instance				= try _self.jsonDecoder.decode(type, from: data)
-
-					loaded = true
-
-					completion(instance)
-				} catch _ {
+//					do {
+//						let instance				= try _self.jsonDecoder.decode(type, from: data)
+//
+//						completion(.success(instance))
+//					} catch _ {
+//						completion(.failure(ReadError.failed))
+//					}
+				} else {
+					completion(.failure(ReadError.failed))
 				}
 			}
-		}
-
-		if loaded == false {
-			throw LoadError.failed
 		}
 	}
 }
@@ -247,18 +255,18 @@ extension Persistence {
 	///
 	private func stringForBuildNumber() -> String {
 		var buildString:String = ""
-		
+
 		guard let infoDictionary = Bundle.main.infoDictionary else {
 			return ""
 		}
-		
+
 		if let buildVersion = infoDictionary["CFBundleVersion"] as? String {
 			buildString  = buildVersion
 		}
-		
+
 		return buildString
 	}
-	
+
 	/// Creates a directory at the supplied `URL`.
 	///
 	/// This method will create all intermediate directories as needed,
@@ -275,13 +283,13 @@ extension Persistence {
 		if FileManager.default.fileExists(atPath: directoryURL.path) == false {
 			do {
 				try FileManager.default.createDirectory(atPath: directoryURL.path, withIntermediateDirectories: true, attributes: nil)
-				
+
 				return true
 			} catch {
 				return false
 			}
 		}
-		
+
 		return true
 	}
 }
