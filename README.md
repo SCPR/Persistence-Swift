@@ -52,12 +52,12 @@ The process of loading a file is similar to saving it. To do so, use the followi
 ```swift
 let fileLocation	= Persistence.FileLocation.documentsDirectory(versioned: false)
 
-try? Persistence().load(fromFileNamed: "Strings.json", asType: [String], location: fileLocation, completion: { (stringInstances) in
+try? Persistence().load(fromFileNamed: "Strings.json", asType: [String].self, location: fileLocation, completion: { (stringInstances) in
   // Access stringInstances here...
 })
 ```
 
-One major difference is that, as the file has not yet been loaded, you must specify the _expected_ type (in this case, an array of `String` instances) that will be loaded. This is to aid with their deserialization.
+One major difference is that, as the file has not yet been loaded, you must specify the _expected_ type (in this case, an array of `String` instances, as `[String].self`) that will be loaded. This is to aid with their deserialization.
 
 If the load and deserialization works properly, a `[String]` optional will be returned within the specified completion block. Otherwise, the method will throw a `LoadError` error.
 
