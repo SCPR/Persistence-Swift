@@ -70,60 +70,6 @@ public class Persistence {
 		}
 	}
 
-	/// Returns a `URL` for the on-device directory of a specified location.
-	/// Optionally versions the location.
-	///
-	/// - Parameters:
-	///     - location: The on-device `FileLocation` where the directory is located.
-	///
-	/// - Returns:
-	///     - An optional `URL` for the on-device directory, if it exists.
-	///
-	/// - Author: Jeff A. Campbell
-	///
-	public func directoryURL(forLocation location:FileLocation) -> URL? {
-		var locationDirectoryURL:URL?
-		var isVersioned = false
-
-		switch location {
-		case .applicationDirectory(let versioned):
-			locationDirectoryURL	= FileManager.default.urls(for: .applicationDirectory, in: .userDomainMask).first
-			isVersioned				= versioned
-		case .applicationDirectoryInAppGroup(let appGroupIdentifier, let versioned):
-			locationDirectoryURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
-			isVersioned				= versioned
-		case .applicationSupportDirectoryInAppGroup(let appGroupIdentifier, let versioned):
-			locationDirectoryURL	= FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
-			locationDirectoryURL?.appendPathComponent("Library", isDirectory: true)
-			locationDirectoryURL?.appendPathComponent("Application Support", isDirectory: true)
-			isVersioned				= versioned
-		case .cachesDirectoryInAppGroup(let appGroupIdentifier, let versioned):
-			locationDirectoryURL	= FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
-			locationDirectoryURL?.appendPathComponent("Library", isDirectory: true)
-			locationDirectoryURL?.appendPathComponent("Caches", isDirectory: true)
-			isVersioned				= versioned
-		case .documentsDirectoryInAppGroup(let appGroupIdentifier, let versioned):
-			locationDirectoryURL	= FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
-			locationDirectoryURL?.appendPathComponent("Documents", isDirectory: true)
-			isVersioned				= versioned
-		case .applicationSupportDirectory(versioned: let versioned):
-			locationDirectoryURL	= FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-			isVersioned				= versioned
-		case .cachesDirectory(versioned: let versioned):
-			locationDirectoryURL	= FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-			isVersioned				= versioned
-		case .documentsDirectory(versioned: let versioned):
-			locationDirectoryURL	= FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-			isVersioned				= versioned
-		}
-
-		if isVersioned == true {
-			locationDirectoryURL?.appendPathComponent(self.stringForBuildNumber(), isDirectory: true)
-		}
-
-		return locationDirectoryURL
-	}
-
 	/// Whether a named file at a specified location is older than a supplied time interval. Optionally refers to a versioned location (so that it does not persist between app builds).
 	///
 	/// - Parameters:
@@ -137,7 +83,7 @@ public class Persistence {
 	/// - Author: Jeff A. Campbell
 	///
 	public func file(isOlderThan ageThreshold:TimeInterval, fileNamed fileName:String, location:FileLocation) -> Bool {
-		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
+		guard let locationDirectoryURL = location.directoryURL() else {
 			return false
 		}
 
@@ -152,11 +98,17 @@ public class Persistence {
 
 				fileAge						= modificationDate.timeIntervalSinceNow
 
-				if (fileAge <= -1 * (ageThreshold)) {
+				if self.debugLevel == .verbose {
+					print("Age: File '\(fileName)' in location '\(locationDirectoryURL.path)' is \(abs(fileAge)) seconds old. Threshold is \(ageThreshold) seconds.")
+				}
+
+				if abs(fileAge) > ageThreshold {
+					return true
+				} else {
 					return false
 				}
 			} catch _ {
-				return false
+				return true
 			}
 		}
 
@@ -175,8 +127,8 @@ public class Persistence {
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) -> Result<Bool, WriteError> where T : Encodable {
-		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
+	@discardableResult public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) -> Result<Bool, WriteError> where T : Encodable {
+		guard let locationDirectoryURL = location.directoryURL() else {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
 				print("Write: Failure - Invalid directory.")
 			}
@@ -184,13 +136,13 @@ public class Persistence {
 			return .failure(.invalidDirectory)
 		}
 
-		if self.debugLevel == .basic || self.debugLevel == .verbose {
-			print("Write: Writing file '\(fileName)' to location '\(location)'.")
+		if self.debugLevel == .verbose {
+			print("Write: Writing file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		if self.createDirectory(locationDirectoryURL) == false {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Write: Failure - Could not create directory.")
+				print("Write: Failure - Could not create directory in location '\(locationDirectoryURL.path)'.")
 			}
 
 			return .failure(.couldNotCreateDirectory)
@@ -210,7 +162,7 @@ public class Persistence {
 
 			if saved == false {
 				if self.debugLevel == .basic || self.debugLevel == .verbose {
-					print("Write: Failure - Could not write file.")
+					print("Write: Failure - Could not write file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 				}
 
 				return .failure(.couldNotWriteFile)
@@ -223,8 +175,8 @@ public class Persistence {
 			return .failure(.couldNotEncode)
 		}
 
-		if self.debugLevel == .basic || self.debugLevel == .verbose {
-			print("Write: Success - Wrote file '\(fileName)' at location '\(location)'.")
+		if self.debugLevel == .verbose {
+			print("Write: Success - Wrote to file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		return .success(true)
@@ -241,7 +193,7 @@ public class Persistence {
 	/// - Author: Jeff A. Campbell
 	///
 	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:FileLocation, completion: @escaping (Result<T, ReadError>) -> Void) where T : Decodable {
-		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
+		guard let locationDirectoryURL = location.directoryURL() else {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
 				print("Read: Failure - Invalid directory.")
 			}
@@ -252,9 +204,13 @@ public class Persistence {
 
 		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
 
+		if self.debugLevel == .verbose {
+			print("Read: Reading file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+		}
+
 		if FileManager.default.fileExists(atPath: fileURL.path) == false {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Read: Failure - File does not exist at specified location (\(fileURL.path)).")
+				print("Read: Failure - File '\(fileName)' does not exist in location '\(locationDirectoryURL.path)'.")
 			}
 
 			completion(.failure(ReadError.fileDoesNotExist))
@@ -267,21 +223,21 @@ public class Persistence {
 
 				if let data = FileManager.default.contents(atPath: readURL.path) {
 					if let instance = try? _self.jsonDecoder.decode(type, from: data) {
-						if _self.debugLevel == .basic || _self.debugLevel == .verbose {
-							print("Read: Success - Decoded content of type \(type) at location (\(readURL.path)).")
+						if _self.debugLevel == .verbose {
+							print("Read: Success - Decoded content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
 						}
 
 						completion(.success(instance))
 					} else {
 						if _self.debugLevel == .basic || _self.debugLevel == .verbose {
-							print("Read: Failure - Could not decode content of type \(type) from location (\(readURL.path)).")
+							print("Read: Failure - Could not decode content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
 						}
 
 						completion(.failure(ReadError.failed))
 					}
 				} else {
 					if _self.debugLevel == .basic || _self.debugLevel == .verbose {
-						print("Read: Failure - Could not read file from location (\(readURL.path)).")
+						print("Read: Failure - Could not read file '\(fileName)' from location '\(locationDirectoryURL.path)'.")
 					}
 
 					completion(.failure(ReadError.failed))
@@ -292,27 +248,6 @@ public class Persistence {
 }
 
 extension Persistence {
-	/// Returns a string for use in versioned subdirectories. Based on the current `CFBundleVersion` (application build number),
-	///
-	/// - Returns:
-	///     - A string for use with versioned subdirectory names.
-	///
-	/// - Author: Jeff A. Campbell
-	///
-	private func stringForBuildNumber() -> String {
-		var buildString:String = ""
-
-		guard let infoDictionary = Bundle.main.infoDictionary else {
-			return ""
-		}
-
-		if let buildVersion = infoDictionary["CFBundleVersion"] as? String {
-			buildString  = buildVersion
-		}
-
-		return buildString
-	}
-
 	/// Creates a directory at the supplied `URL`.
 	///
 	/// This method will create all intermediate directories as needed,
