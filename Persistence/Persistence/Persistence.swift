@@ -12,7 +12,18 @@ import Foundation
 /// - Author: Jeff A. Campbell
 ///
 public class Persistence {
-	private var debug		= false
+	public enum DebugLevel: String {
+		/// Display no debugging output.
+		case disabled
+
+		/// Display only basic/minimal debugging output.
+		case basic
+
+		/// Display all available debugging output.
+		case verbose
+	}
+
+	private var debugLevel	= DebugLevel.disabled
 
 	private let jsonEncoder	= JSONEncoder()
 	private let jsonDecoder	= JSONDecoder()
@@ -27,15 +38,15 @@ public class Persistence {
 	/// Initialize Persistence with optional debugging and an optional `DateFormatter` to use when encoding and decoding Date instances.
 	///
 	/// - Parameters:
-	///     - debug: Whether to enable debug output.
+	///     - debugLevel: What level of debugging output to display.
 	///     - dateFormatter: An optional DateFormatter used for encoding and decoding.
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public convenience init(withDebug debug:Bool, dateFormatter:DateFormatter?) {
+	public convenience init(withDebugLevel debugLevel:DebugLevel, dateFormatter:DateFormatter? = nil) {
 		self.init()
 
-		self.debug = debug
+		self.debugLevel = debugLevel
 
 		if let dateFormatter = dateFormatter {
 			self.setDateFormatter(dateFormatter)
@@ -166,10 +177,22 @@ public class Persistence {
 	///
 	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) -> Result<Bool, WriteError> where T : Encodable {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Write: Failure - Invalid directory.")
+			}
+
 			return .failure(.invalidDirectory)
 		}
 
+		if self.debugLevel == .basic || self.debugLevel == .verbose {
+			print("Write: Writing file '\(fileName)' to location '\(location)'.")
+		}
+
 		if self.createDirectory(locationDirectoryURL) == false {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Write: Failure - Could not create directory.")
+			}
+
 			return .failure(.couldNotCreateDirectory)
 		}
 
@@ -186,10 +209,22 @@ public class Persistence {
 			})
 
 			if saved == false {
+				if self.debugLevel == .basic || self.debugLevel == .verbose {
+					print("Write: Failure - Could not write file.")
+				}
+
 				return .failure(.couldNotWriteFile)
 			}
 		} catch {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Write: Failure - Could not encode.")
+			}
+
 			return .failure(.couldNotEncode)
+		}
+
+		if self.debugLevel == .basic || self.debugLevel == .verbose {
+			print("Write: Success - Wrote file '\(fileName)' at location '\(location)'.")
 		}
 
 		return .success(true)
@@ -207,6 +242,10 @@ public class Persistence {
 	///
 	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:FileLocation, completion: @escaping (Result<T, ReadError>) -> Void) where T : Decodable {
 		guard let locationDirectoryURL = self.directoryURL(forLocation: location) else {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Read: Failure - Invalid directory.")
+			}
+
 			completion(.failure(ReadError.invalidDirectory))
 			return
 		}
@@ -214,6 +253,10 @@ public class Persistence {
 		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
 
 		if FileManager.default.fileExists(atPath: fileURL.path) == false {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Read: Failure - File does not exist at specified location (\(fileURL.path)).")
+			}
+
 			completion(.failure(ReadError.fileDoesNotExist))
 		} else {
 			NSFileCoordinator().coordinate(readingItemAt: fileURL, options: [], error: nil) { [weak self] (readURL) in
@@ -224,20 +267,23 @@ public class Persistence {
 
 				if let data = FileManager.default.contents(atPath: readURL.path) {
 					if let instance = try? _self.jsonDecoder.decode(type, from: data) {
+						if _self.debugLevel == .basic || _self.debugLevel == .verbose {
+							print("Read: Success - Decoded content of type \(type) at location (\(readURL.path)).")
+						}
+
 						completion(.success(instance))
 					} else {
+						if _self.debugLevel == .basic || _self.debugLevel == .verbose {
+							print("Read: Failure - Could not decode content of type \(type) from location (\(readURL.path)).")
+						}
+
 						completion(.failure(ReadError.failed))
 					}
-
-
-//					do {
-//						let instance				= try _self.jsonDecoder.decode(type, from: data)
-//
-//						completion(.success(instance))
-//					} catch _ {
-//						completion(.failure(ReadError.failed))
-//					}
 				} else {
+					if _self.debugLevel == .basic || _self.debugLevel == .verbose {
+						print("Read: Failure - Could not read file from location (\(readURL.path)).")
+					}
+
 					completion(.failure(ReadError.failed))
 				}
 			}
