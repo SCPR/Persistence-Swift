@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1FFAF2B72244364A007DFF91"
-               BuildableName = "Persistence_iOS.framework"
+               BuildableName = "Persistence.framework"
                BlueprintName = "Persistence_iOS"
                ReferencedContainer = "container:Persistence.xcodeproj">
             </BuildableReference>
@@ -46,7 +46,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1FFAF2B72244364A007DFF91"
-            BuildableName = "Persistence_iOS.framework"
+            BuildableName = "Persistence.framework"
             BlueprintName = "Persistence_iOS"
             ReferencedContainer = "container:Persistence.xcodeproj">
          </BuildableReference>
@@ -64,7 +64,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "1FFAF2B72244364A007DFF91"
-            BuildableName = "Persistence_iOS.framework"
+            BuildableName = "Persistence.framework"
             BlueprintName = "Persistence_iOS"
             ReferencedContainer = "container:Persistence.xcodeproj">
          </BuildableReference>
