@@ -1,6 +1,6 @@
 # Persistence-Swift
 
-Persistence is a data persistence framework for iOS (and, potentially, platforms such as macOS - through it hasn't been extensively tested on them), used to easily persist Codable-conformant classes, structs, etc. to a device (in [JSON format](https://en.wikipedia.org/wiki/JSON)) and read them back easily.
+Persistence is a data persistence framework for iOS and macOS, used to easily persist Codable-conformant classes, structs, etc. to a device (in [JSON format](https://en.wikipedia.org/wiki/JSON)) and read them back easily.
 
 Persistence is written in Swift 5.
 
@@ -12,7 +12,7 @@ This project is licensed under the MIT license.
 
 To integrate this framework into your Xcode project, clone (or otherwise download) it onto your development machine and drag the included _Persistence.xcodeproj_ file into your project's file navigator in Xcode.
 
-Once you have done so, drag the appropriate framework file from the _Products_ group into the Embedded Binaries section of the targets you wish to build it with. Then make sure to _import_ Persistence at the top of any file(s) you wish to use it in.
+Once you have done so, drag the appropriate framework file from the _Products_ group into the Embedded Binaries section of the targets you wish to build it with. Then make sure to _import_ the framework at the top of any file(s) you wish to use it in.
 
 ## Inline Documentation
 
