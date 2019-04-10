@@ -20,7 +20,7 @@
 		1F5C3ACF225DC33200E3B468 /* Persistence_macOS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Persistence_macOS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F5C3AD1225DC33200E3B468 /* Persistence_macOS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Persistence_macOS.h; sourceTree = "<group>"; };
 		1F5C3AD2225DC33200E3B468 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		1FFAF2B82244364A007DFF91 /* Persistence_iOS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Persistence_iOS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		1FFAF2B82244364A007DFF91 /* Persistence.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Persistence.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FFAF2BC2244364A007DFF91 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1FFAF347224439DF007DFF91 /* Persistence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		1FFAF351224461B0007DFF91 /* Persistence+Errors.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Persistence+Errors.swift"; sourceTree = "<group>"; };
@@ -66,7 +66,7 @@
 		1FFAF2B92244364A007DFF91 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1FFAF2B82244364A007DFF91 /* Persistence_iOS.framework */,
+				1FFAF2B82244364A007DFF91 /* Persistence.framework */,
 				1F5C3ACF225DC33200E3B468 /* Persistence_macOS.framework */,
 			);
 			name = Products;
@@ -137,7 +137,7 @@
 			);
 			name = Persistence_iOS;
 			productName = Persistence;
-			productReference = 1FFAF2B82244364A007DFF91 /* Persistence_iOS.framework */;
+			productReference = 1FFAF2B82244364A007DFF91 /* Persistence.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -420,7 +420,8 @@
 					"@loader_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.americanpublicmedia.KPCCRadio.Persistence-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_MODULE_NAME = Persistence;
+				PRODUCT_NAME = Persistence;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -449,7 +450,8 @@
 					"@loader_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.americanpublicmedia.KPCCRadio.Persistence-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_MODULE_NAME = Persistence;
+				PRODUCT_NAME = Persistence;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
