@@ -17,7 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1F5C3ACF225DC33200E3B468 /* Persistence_macOS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Persistence_macOS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F5C3ACF225DC33200E3B468 /* Persistence.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Persistence.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F5C3AD1225DC33200E3B468 /* Persistence_macOS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Persistence_macOS.h; sourceTree = "<group>"; };
 		1F5C3AD2225DC33200E3B468 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1FFAF2B82244364A007DFF91 /* Persistence.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Persistence.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,7 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				1FFAF2B82244364A007DFF91 /* Persistence.framework */,
-				1F5C3ACF225DC33200E3B468 /* Persistence_macOS.framework */,
+				1F5C3ACF225DC33200E3B468 /* Persistence.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,7 +119,7 @@
 			);
 			name = Persistence_macOS;
 			productName = Persistence_macOS;
-			productReference = 1F5C3ACF225DC33200E3B468 /* Persistence_macOS.framework */;
+			productReference = 1F5C3ACF225DC33200E3B468 /* Persistence.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		1FFAF2B72244364A007DFF91 /* Persistence_iOS */ = {
@@ -238,7 +238,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRODUCT_BUNDLE_IDENTIFIER = "org.americanpublicmedia.KPCCRadio.Persistence-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_MODULE_NAME = Persistence;
+				PRODUCT_NAME = Persistence;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -266,7 +267,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRODUCT_BUNDLE_IDENTIFIER = "org.americanpublicmedia.KPCCRadio.Persistence-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_MODULE_NAME = Persistence;
+				PRODUCT_NAME = Persistence;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
