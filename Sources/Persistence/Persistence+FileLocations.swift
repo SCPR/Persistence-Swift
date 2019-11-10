@@ -13,6 +13,11 @@ extension Persistence {
 	/// - Author: Jeff A. Campbell
 	///
 	public enum FileLocation {
+		/// A specified URL.
+		///
+		/// If versioning is enabled, specifies a subdirectory based on the build number (ie. "/<directory>/1234").
+		case url(_ url:URL, versioned: Bool)
+
 		/// Within the Application directory. Optionally within a version-specific subdirectory.
 		///
 		/// If versioning is enabled, specifies a subdirectory based on the build number (ie. "/<directory>/1234").
@@ -69,6 +74,9 @@ extension Persistence {
 			var isVersioned = false
 
 			switch self {
+			case .url(let url, let versioned):
+				locationDirectoryURL	= url
+				isVersioned				= versioned
 			case .applicationDirectory(let versioned):
 				locationDirectoryURL	= FileManager.default.urls(for: .applicationDirectory, in: .userDomainMask).first
 				isVersioned				= versioned
