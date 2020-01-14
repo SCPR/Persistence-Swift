@@ -222,15 +222,18 @@ public class Persistence {
 				}
 
 				if let data = FileManager.default.contents(atPath: readURL.path) {
-					if let instance = try? _self.jsonDecoder.decode(type, from: data) {
+					do {
+						let instance = try _self.jsonDecoder.decode(type, from: data)
+
 						if _self.debugLevel == .verbose {
 							print("Read: Success - Decoded content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
 						}
 
 						completion(.success(instance))
-					} else {
+					} catch let error {
 						if _self.debugLevel == .basic || _self.debugLevel == .verbose {
 							print("Read: Failure - Could not decode content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
+							print("Error: \(error)")
 						}
 
 						completion(.failure(ReadError.failed))
