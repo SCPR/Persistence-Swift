@@ -58,6 +58,26 @@ extension Persistence {
 		/// If versioning is enabled, specifies a subdirectory based on the build number (ie. "/<directory>/1234").
 		case applicationSupportDirectoryInAppGroup(appGroupIdentifier: String, versioned: Bool)
 
+		/// Returns a `FileLocation` for the on-device directory of a specified location with an appended directory.
+		///
+		/// - Parameters:
+		///     - name: The directory name to append to the `FileLocation`.
+		///
+		/// - Returns:
+		///     - An optional `FileLocation` for the on-device directory, if it exists.
+		///
+		/// - Author: Jeff A. Campbell
+		///
+		public func appendingDirectory(withName name:String) -> FileLocation? {
+			guard let locationURL = self.directoryURL() else { return nil }
+
+			let appendingURL = locationURL.appendingPathComponent(name, isDirectory: true)
+
+			let appendedLocation = FileLocation.url(appendingURL, versioned: false)
+
+			return appendedLocation
+		}
+		
 		/// Returns a `URL` for the on-device directory of a specified location.
 		/// Optionally versions the location.
 		///
