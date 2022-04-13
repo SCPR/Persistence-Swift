@@ -37,4 +37,19 @@ extension Persistence {
 		/// Failed to write for an unspecified reason.
 		case failed
 	}
+
+	/// Errors associated with deleting.
+	///
+	/// - Author: Jeff A. Campbell
+	///
+	public enum DeleteError: Error {
+		/// Attempted to delete file in an invalid/non-existent directory.
+		case invalidDirectory
+		/// File does not exist at the location specified.
+		case fileDoesNotExist
+		/// Failed to delete the specified file.
+		case couldNotDeleteFile
+		/// Failed to load for an unspecified reason.
+		case failed
+	}
 }

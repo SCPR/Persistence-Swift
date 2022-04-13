@@ -248,6 +248,68 @@ public class Persistence {
 			}
 		}
 	}
+
+	/// Deletes named file at a specified location.
+	///
+	/// - Parameters:
+	///     - fileName: The name of the file to delete.
+	///     - location: The on-device `FileLocation` where the file is to be written.
+	///
+	/// - Returns:
+	///     - A .success() Result with a true Bool if the delete succeeded, or a .failure() with a DeleteError if it did not.
+	///
+	/// - Author: Jeff A. Campbell
+	///
+	@discardableResult public func delete(fileNamed fileName:String, location:FileLocation) -> Result<Bool, DeleteError> {
+		guard let locationDirectoryURL = location.directoryURL() else {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Delete: Failure - Invalid directory.")
+			}
+
+			return .failure(.invalidDirectory)
+		}
+
+		if self.debugLevel == .verbose {
+			print("Delete: Deleting file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+		}
+
+		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
+
+		var deleted				= false
+
+		NSFileCoordinator().coordinate(writingItemAt: fileURL, options: [], error: nil, byAccessor: { (deleteURL) in
+			if FileManager.default.isDeletableFile(atPath: deleteURL.path) {
+				do {
+					try FileManager.default.removeItem(at: deleteURL)
+
+					deleted = true
+				} catch {
+				}
+			}
+		})
+
+		if deleted == false {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Delete: Failure - Could not delete file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+			}
+
+			return .failure(.couldNotDeleteFile)
+		}
+
+		if deleted == false {
+			if self.debugLevel == .basic || self.debugLevel == .verbose {
+				print("Delete: Failure - Could not delete.")
+			}
+
+			return .failure(.couldNotDeleteFile)
+		}
+
+		if self.debugLevel == .verbose {
+			print("Delete: Success - Deleted file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+		}
+
+		return .success(true)
+	}
 }
 
 extension Persistence {
