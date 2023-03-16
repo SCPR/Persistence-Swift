@@ -1,15 +1,33 @@
 import XCTest
+import Foundation
 @testable import Persistence
 
 final class PersistenceTests: XCTestCase {
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        XCTAssertEqual(1, 1)
-    }
+	struct Test:Codable {
+		var test:String
+	}
+	
+	func testWrite() async {
+		do {
+			let test = Test(test: "Test")
 
-    static var allTests = [
-        ("testExample", testExample),
-    ]
+			try await Persistence(withDebugLevel: .verbose).write(test, toFileNamed: "PersistenceTest.txt", location: .applicationSupportDirectory(versioned: false))
+
+			XCTAssertEqual(1, 1)
+		} catch let error {
+			XCTAssertNil(error, "Received error: \(error)")
+		}
+	}
+	
+	func testRead() async {
+		do {
+			let content = try await Persistence(withDebugLevel: .verbose).read(fromFileNamed: "PersistenceTest.txt", asType: Test.self, location: .applicationSupportDirectory(versioned: false))
+
+			print("content = \(content.test)")
+
+			XCTAssertEqual(content.test, "Test")
+		} catch let error {
+			XCTAssertNil(error, "Received error: \(error)")
+		}
+	}
 }

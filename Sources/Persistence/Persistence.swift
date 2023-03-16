@@ -115,7 +115,7 @@ public class Persistence {
 		return true
 	}
 
-	/// Writes a `Codable`-compliant class, struct, enum, or collection to a named file at a specified location.
+	/// Writes an `Encodable`-compliant class, struct, enum, or collection to a named file at a specified location.
 	///
 	/// - Parameters:
 	///     - encodableItem: A `Codable`-conformant class, struct, enum, or collection.
@@ -182,7 +182,32 @@ public class Persistence {
 		return .success(true)
 	}
 
-	/// Reads a `Codable`-compliant class, struct, enum, or collection from a named file at a specified location.
+	/// Writes an `Encodable`-compliant class, struct, enum, or collection to a named file at a specified location using async/await.
+	///
+	/// - Parameters:
+	///     - encodableItem: A `Codable`-conformant class, struct, enum, or collection.
+	///     - fileName: The name of the file to write.
+	///     - location: The on-device `FileLocation` where the file is to be written.
+	///
+	/// - Returns:
+	///     - A .success() Result with a true Bool if the write succeeded, or a .failure() with a WriteError if it did not.
+	///
+	/// - Author: Jeff A. Campbell
+	///
+	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) async throws where T : Encodable {
+		try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) -> Void in
+			let result = self.write(encodableItem, toFileNamed: fileName, location: location)
+
+			switch result {
+			case .success(_):
+				continuation.resume()
+			case .failure(let error):
+				return continuation.resume(throwing: error)
+			}
+		}
+	}
+
+	/// Reads a `Decodable`-compliant class, struct, enum, or collection from a named file at a specified location.
 	///
 	/// - Parameters:
 	///     - fileName: The name of the file to read.
@@ -249,6 +274,28 @@ public class Persistence {
 		}
 	}
 
+	/// Reads a `Decodable`-compliant class, struct, enum, or collection from a named file at a specified location using async/await.
+	///
+	/// - Parameters:
+	///     - fileName: The name of the file to read.
+	///     - type: The `Codable`-conformant class, struct, enum, or collection.
+	///     - location: The on-device `FileLocation` where the file is to be read from.
+	///
+	/// - Author: Jeff A. Campbell
+	///
+	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:FileLocation) async throws -> T where T : Decodable {
+		try await withCheckedThrowingContinuation { continuation in
+			self.read(fromFileNamed: fileName, asType: type, location: location) { result in
+				switch result {
+				case .success(let resultDecodable):
+					continuation.resume(returning: resultDecodable)
+				case .failure(let error):
+					return continuation.resume(throwing: error)
+				}
+			}
+		}
+	}
+	
 	/// Deletes named file at a specified location.
 	///
 	/// - Parameters:
