@@ -23,6 +23,20 @@ public class Persistence {
 		case verbose
 	}
 
+	public enum DateHandling {
+		/// Default date handling.
+		case standard
+
+		/// Seconds since 1970.
+		case secondsSince1970
+
+		/// Milliseconds since 1970.
+		case millisecondsSince1970
+
+		/// Custom date formatter..
+		case dateFormatter(DateFormatter)
+	}
+
 	private var debugLevel	= DebugLevel.disabled
 
 	private let jsonEncoder	= JSONEncoder()
@@ -35,7 +49,7 @@ public class Persistence {
 		self.setDateFormatter(dateFormatter)
 	}
 
-	/// Initialize Persistence with optional debugging and an optional `DateFormatter` to use when encoding and decoding Date instances.
+	/// Initialize Persistence with optional debugging and an optional `DateHandling` option to use when encoding and decoding Date instances.
 	///
 	/// - Parameters:
 	///     - debugLevel: What level of debugging output to display.
@@ -43,13 +57,37 @@ public class Persistence {
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public convenience init(withDebugLevel debugLevel:DebugLevel, dateFormatter:DateFormatter? = nil) {
+	public convenience init(withDebugLevel debugLevel:DebugLevel, dateHandling:DateHandling? = .standard) {
 		self.init()
 
 		self.debugLevel = debugLevel
 
-		if let dateFormatter = dateFormatter {
-			self.setDateFormatter(dateFormatter)
+		self.setDateHandling(dateHandling)
+	}
+
+	/// Set the `DateFormatter` used by Persistence when encoding and decoding `Date` instances.
+	///
+	/// - Parameters:
+	///     - dateHandling: The `DateHandling` used for encoding and decoding.
+	///
+	/// - Author: Jeff A. Campbell
+	///
+	public func setDateHandling(_ dateHandling:DateHandling?) {
+		if let dateHandling = dateHandling {
+			switch dateHandling {
+			case .standard:
+				self.setDateFormatter(nil)
+			case .secondsSince1970:
+				self.jsonEncoder.dateEncodingStrategy	= .secondsSince1970
+				self.jsonDecoder.dateDecodingStrategy	= .secondsSince1970
+			case .millisecondsSince1970:
+				self.jsonEncoder.dateEncodingStrategy	= .millisecondsSince1970
+				self.jsonDecoder.dateDecodingStrategy	= .millisecondsSince1970
+			case .dateFormatter(let dateFormatter):
+				self.setDateFormatter(dateFormatter)
+			}
+		} else {
+			self.setDateFormatter(nil)
 		}
 	}
 
@@ -60,13 +98,16 @@ public class Persistence {
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	public func setDateFormatter(_ dateFormatter:DateFormatter?) {
+	private func setDateFormatter(_ dateFormatter:DateFormatter?) {
 		if let dateFormatter = dateFormatter {
 			self.jsonEncoder.dateEncodingStrategy	= .formatted(dateFormatter)
 			self.jsonDecoder.dateDecodingStrategy	= .formatted(dateFormatter)
 		} else {
-			self.jsonEncoder.dateEncodingStrategy	= .secondsSince1970
-			self.jsonDecoder.dateDecodingStrategy	= .secondsSince1970
+			let dateFormatter = DateFormatter()
+			dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+
+			self.jsonEncoder.dateEncodingStrategy	= .formatted(dateFormatter)
+			self.jsonDecoder.dateDecodingStrategy	= .formatted(dateFormatter)
 		}
 	}
 
