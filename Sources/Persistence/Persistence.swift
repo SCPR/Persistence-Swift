@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 /// This class handles all reading and writing behaviors provided by the Persistence framework.
 ///
@@ -47,6 +48,8 @@ public class Persistence {
 		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
 
 		self.setDateFormatter(dateFormatter)
+
+		self.jsonEncoder.nonConformingFloatEncodingStrategy	= .convertToString(positiveInfinity: "1.0", negativeInfinity: "0.0", nan: "0.0")
 	}
 
 	/// Initialize Persistence with optional debugging and an optional `DateHandling` option to use when encoding and decoding Date instances.
@@ -140,7 +143,7 @@ public class Persistence {
 				fileAge						= modificationDate.timeIntervalSinceNow
 
 				if self.debugLevel == .verbose {
-					print("Age: File '\(fileName)' in location '\(locationDirectoryURL.path)' is \(abs(fileAge)) seconds old. Threshold is \(ageThreshold) seconds.")
+					Logger.io.info("Age: File '\(fileName)' in location '\(locationDirectoryURL.path)' is \(abs(fileAge)) seconds old. Threshold is \(ageThreshold) seconds.")
 				}
 
 				if abs(fileAge) > ageThreshold {
@@ -168,22 +171,22 @@ public class Persistence {
 	///
 	/// - Author: Jeff A. Campbell
 	///
-	@discardableResult public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) -> Result<Bool, WriteError> where T : Encodable {
+	@discardableResult public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) throws -> Result<Bool, WriteError> where T : Encodable {
 		guard let locationDirectoryURL = location.directoryURL() else {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Write: Failure - Invalid directory.")
+				Logger.io.error("Write: Failure - Invalid directory.")
 			}
 
 			return .failure(.invalidDirectory)
 		}
 
 		if self.debugLevel == .verbose {
-			print("Write: Writing file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+			Logger.io.info("Write: Writing file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		if self.createDirectory(locationDirectoryURL) == false {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Write: Failure - Could not create directory in location '\(locationDirectoryURL.path)'.")
+				Logger.io.error("Write: Failure - Could not create directory in location '\(locationDirectoryURL.path)'.")
 			}
 
 			return .failure(.couldNotCreateDirectory)
@@ -203,21 +206,21 @@ public class Persistence {
 
 			if saved == false {
 				if self.debugLevel == .basic || self.debugLevel == .verbose {
-					print("Write: Failure - Could not write file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+					Logger.io.error("Write: Failure - Could not write file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 				}
 
 				return .failure(.couldNotWriteFile)
 			}
 		} catch {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Write: Failure - Could not encode.")
+				Logger.io.error("Write: Failure - Could not encode.")
 			}
 
 			return .failure(.couldNotEncode)
 		}
 
 		if self.debugLevel == .verbose {
-			print("Write: Success - Wrote to file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+			Logger.io.info("Write: Success - Wrote to file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		return .success(true)
@@ -237,13 +240,15 @@ public class Persistence {
 	///
 	public func write<T>(_ encodableItem:T, toFileNamed fileName:String, location:FileLocation) async throws where T : Encodable {
 		try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) -> Void in
-			let result = self.write(encodableItem, toFileNamed: fileName, location: location)
+			let result = try? self.write(encodableItem, toFileNamed: fileName, location: location)
 
 			switch result {
 			case .success(_):
 				continuation.resume()
 			case .failure(let error):
 				return continuation.resume(throwing: error)
+			case .none:
+				continuation.resume()
 			}
 		}
 	}
@@ -261,7 +266,7 @@ public class Persistence {
 	public func read<T>(fromFileNamed fileName:String, asType type:T.Type, location:FileLocation, completion: @escaping (Result<T, ReadError>) -> Void) where T : Decodable {
 		guard let locationDirectoryURL = location.directoryURL() else {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Read: Failure - Invalid directory.")
+				Logger.io.error("Read: Failure - Invalid directory.")
 			}
 
 			completion(.failure(ReadError.invalidDirectory))
@@ -271,12 +276,12 @@ public class Persistence {
 		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
 
 		if self.debugLevel == .verbose {
-			print("Read: Reading file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+			Logger.io.info("Read: Reading file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		if FileManager.default.fileExists(atPath: fileURL.path) == false {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Read: Failure - File '\(fileName)' does not exist in location '\(locationDirectoryURL.path)'.")
+				Logger.io.error("Read: Failure - File '\(fileName)' does not exist in location '\(locationDirectoryURL.path)'.")
 			}
 
 			completion(.failure(ReadError.fileDoesNotExist))
@@ -292,21 +297,20 @@ public class Persistence {
 						let instance = try _self.jsonDecoder.decode(type, from: data)
 
 						if _self.debugLevel == .verbose {
-							print("Read: Success - Decoded content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
+							Logger.io.info("Read: Success - Decoded content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
 						}
 
 						completion(.success(instance))
 					} catch let error {
 						if _self.debugLevel == .basic || _self.debugLevel == .verbose {
-							print("Read: Failure - Could not decode content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'.")
-							print("Error: \(error)")
+							Logger.io.error("Read: Failure - Could not decode content of file '\(fileName)' with type \(type) from location '\(locationDirectoryURL.path)'. Error: \(error.localizedDescription)")
 						}
 
 						completion(.failure(ReadError.failed))
 					}
 				} else {
 					if _self.debugLevel == .basic || _self.debugLevel == .verbose {
-						print("Read: Failure - Could not read file '\(fileName)' from location '\(locationDirectoryURL.path)'.")
+						Logger.io.error("Read: Failure - Could not read file '\(fileName)' from location '\(locationDirectoryURL.path)'.")
 					}
 
 					completion(.failure(ReadError.failed))
@@ -351,14 +355,14 @@ public class Persistence {
 	@discardableResult public func delete(fileNamed fileName:String, location:FileLocation) -> Result<Bool, DeleteError> {
 		guard let locationDirectoryURL = location.directoryURL() else {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Delete: Failure - Invalid directory.")
+				Logger.io.error("Delete: Failure - Invalid directory.")
 			}
 
 			return .failure(.invalidDirectory)
 		}
 
 		if self.debugLevel == .verbose {
-			print("Delete: Deleting file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+			Logger.io.info("Delete: Deleting file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		let fileURL				= locationDirectoryURL.appendingPathComponent(fileName)
@@ -378,7 +382,7 @@ public class Persistence {
 
 		if deleted == false {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Delete: Failure - Could not delete file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+				Logger.io.error("Delete: Failure - Could not delete file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 			}
 
 			return .failure(.couldNotDeleteFile)
@@ -386,14 +390,14 @@ public class Persistence {
 
 		if deleted == false {
 			if self.debugLevel == .basic || self.debugLevel == .verbose {
-				print("Delete: Failure - Could not delete.")
+				Logger.io.error("Delete: Failure - Could not delete.")
 			}
 
 			return .failure(.couldNotDeleteFile)
 		}
 
 		if self.debugLevel == .verbose {
-			print("Delete: Success - Deleted file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
+			Logger.io.info("Delete: Success - Deleted file '\(fileName)' in location '\(locationDirectoryURL.path)'.")
 		}
 
 		return .success(true)
